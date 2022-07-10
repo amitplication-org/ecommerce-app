@@ -21,12 +21,16 @@ import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
 import { OrderService } from "../order.service";
 import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
 import { Public } from "../../decorators/public.decorator";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { OrderCreateInput } from "./OrderCreateInput";
 import { OrderWhereInput } from "./OrderWhereInput";
 import { OrderWhereUniqueInput } from "./OrderWhereUniqueInput";
 import { OrderFindManyArgs } from "./OrderFindManyArgs";
 import { OrderUpdateInput } from "./OrderUpdateInput";
 import { Order } from "./Order";
+import { ProductFindManyArgs } from "../../product/base/ProductFindManyArgs";
+import { Product } from "../../product/base/Product";
+import { ProductWhereUniqueInput } from "../../product/base/ProductWhereUniqueInput";
 @swagger.ApiBearerAuth()
 @common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class OrderControllerBase {
@@ -54,12 +58,6 @@ export class OrderControllerBase {
               connect: data.customer,
             }
           : undefined,
-
-        product: data.product
-          ? {
-              connect: data.product,
-            }
-          : undefined,
       },
       select: {
         createdAt: true,
@@ -72,13 +70,6 @@ export class OrderControllerBase {
 
         discount: true,
         id: true,
-
-        product: {
-          select: {
-            id: true,
-          },
-        },
-
         quantity: true,
         totalPrice: true,
         updatedAt: true,
@@ -106,13 +97,6 @@ export class OrderControllerBase {
 
         discount: true,
         id: true,
-
-        product: {
-          select: {
-            id: true,
-          },
-        },
-
         quantity: true,
         totalPrice: true,
         updatedAt: true,
@@ -141,13 +125,6 @@ export class OrderControllerBase {
 
         discount: true,
         id: true,
-
-        product: {
-          select: {
-            id: true,
-          },
-        },
-
         quantity: true,
         totalPrice: true,
         updatedAt: true,
@@ -186,12 +163,6 @@ export class OrderControllerBase {
                 connect: data.customer,
               }
             : undefined,
-
-          product: data.product
-            ? {
-                connect: data.product,
-              }
-            : undefined,
         },
         select: {
           createdAt: true,
@@ -204,13 +175,6 @@ export class OrderControllerBase {
 
           discount: true,
           id: true,
-
-          product: {
-            select: {
-              id: true,
-            },
-          },
-
           quantity: true,
           totalPrice: true,
           updatedAt: true,
@@ -252,13 +216,6 @@ export class OrderControllerBase {
 
           discount: true,
           id: true,
-
-          product: {
-            select: {
-              id: true,
-            },
-          },
-
           quantity: true,
           totalPrice: true,
           updatedAt: true,
@@ -272,5 +229,103 @@ export class OrderControllerBase {
       }
       throw error;
     }
+  }
+
+  @common.UseInterceptors(AclFilterResponseInterceptor)
+  @nestAccessControl.UseRoles({
+    resource: "Product",
+    action: "read",
+    possession: "any",
+  })
+  @common.Get("/:id/product")
+  @ApiNestedQuery(ProductFindManyArgs)
+  async findManyProduct(
+    @common.Req() request: Request,
+    @common.Param() params: OrderWhereUniqueInput
+  ): Promise<Product[]> {
+    const query = plainToClass(ProductFindManyArgs, request.query);
+    const results = await this.service.findProduct(params.id, {
+      ...query,
+      select: {
+        createdAt: true,
+        description: true,
+        id: true,
+        itemPrice: true,
+        name: true,
+        updatedAt: true,
+      },
+    });
+    if (results === null) {
+      throw new errors.NotFoundException(
+        `No resource was found for ${JSON.stringify(params)}`
+      );
+    }
+    return results;
+  }
+
+  @nestAccessControl.UseRoles({
+    resource: "Order",
+    action: "update",
+    possession: "any",
+  })
+  @common.Post("/:id/product")
+  async connectProduct(
+    @common.Param() params: OrderWhereUniqueInput,
+    @common.Body() body: ProductWhereUniqueInput[]
+  ): Promise<void> {
+    const data = {
+      product: {
+        connect: body,
+      },
+    };
+    await this.service.update({
+      where: params,
+      data,
+      select: { id: true },
+    });
+  }
+
+  @nestAccessControl.UseRoles({
+    resource: "Order",
+    action: "update",
+    possession: "any",
+  })
+  @common.Patch("/:id/product")
+  async updateProduct(
+    @common.Param() params: OrderWhereUniqueInput,
+    @common.Body() body: ProductWhereUniqueInput[]
+  ): Promise<void> {
+    const data = {
+      product: {
+        set: body,
+      },
+    };
+    await this.service.update({
+      where: params,
+      data,
+      select: { id: true },
+    });
+  }
+
+  @nestAccessControl.UseRoles({
+    resource: "Order",
+    action: "update",
+    possession: "any",
+  })
+  @common.Delete("/:id/product")
+  async disconnectProduct(
+    @common.Param() params: OrderWhereUniqueInput,
+    @common.Body() body: ProductWhereUniqueInput[]
+  ): Promise<void> {
+    const data = {
+      product: {
+        disconnect: body,
+      },
+    };
+    await this.service.update({
+      where: params,
+      data,
+      select: { id: true },
+    });
   }
 }
