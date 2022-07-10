@@ -211,13 +211,6 @@ export class ProductControllerBase {
 
         discount: true,
         id: true,
-
-        product: {
-          select: {
-            id: true,
-          },
-        },
-
         quantity: true,
         totalPrice: true,
         updatedAt: true,
